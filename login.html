@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Login</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+</head>
+<body>
+
+    <h2>OTP Login System</h2>
+
+    <input type="text" id="phone" placeholder="Enter Phone Number">
+    <button onclick="sendOTP()">Send OTP</button>
+
+    <div id="recaptcha-container"></div> <!-- reCAPTCHA must be visible -->
+
+    <input type="text" id="otp" placeholder="Enter OTP">
+    <button onclick="verifyOTP()">Verify OTP</button>
+
+    <script>
+        // ✅ Correct Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_7BUrBZWjbr2wqxv5POcBmfEkktqmvf0",
+            authDomain: "payment-details-77108.firebaseapp.com",
+            projectId: "payment-details-77108",
+            storageBucket: "payment-details-77108.appspot.com", // ✅ Fixed this line
+            messagingSenderId: "1044260652720",
+            appId: "1:1044260652720:web:4871e38d1ae7448cf3dd75"
+        };
+
+        // 🔹 Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        let allowedContacts = [];
+
+        // 🔹 Fetch Allowed Contacts from JSON File on GitHub
+        fetch("https://YOUR_GITHUB_USERNAME.github.io/YOUR_REPO_NAME/contacts.json")
+            .then(response => response.json())
+            .then(data => {
+                allowedContacts = data.map(contact => contact.contact_no);
+            })
+            .catch(error => console.error("Error loading contacts:", error));
+
+        let appVerifier;
+
+        // 🔹 Initialize reCAPTCHA on Page Load
+        window.onload = function () {
+            appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                'size': 'normal',
+                'callback': function(response) {
+                    console.log("reCAPTCHA Verified");
+                }
+            });
+            appVerifier.render();
+        };
+
+        function sendOTP() {
+            let phoneNumber = document.getElementById("phone").value.trim();
+
+            // 🔴 Restrict Access: Only allow numbers in JSON
+            if (!allowedContacts.includes(phoneNumber)) {
+                alert("Access Denied! Your number is not registered.");
+                return;
+            }
+
+            firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
+                .then(confirmationResult => {
+                    window.confirmationResult = confirmationResult;
+                    alert("OTP Sent!");
+                }).catch(error => {
+                    console.error(error);
+                    alert("Error sending OTP: " + error.message);
+                });
+        }
+
+        function verifyOTP() {
+            let otp = document.getElementById("otp").value.trim();
+
+            window.confirmationResult.confirm(otp)
+                .then(result => {
+                    alert("Login Successful!");
+                    console.log("User:", result.user);
+                }).catch(error => {
+                    console.error(error);
+                    alert("Invalid OTP: " + error.message);
+                });
+        }
+    </script>
+
+</body>
+</html>
