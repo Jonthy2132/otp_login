@@ -3,132 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login with OTP</title>
+    <title>Mobile Payment</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            text-align: center;
             background-color: #f4f4f4;
+            padding: 20px;
         }
-        .login-container {
+        h2 {
+            color: #333;
+        }
+        .payment-container {
+            max-width: 400px;
+            margin: 0 auto;
             background: white;
             padding: 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
-            text-align: center;
-            width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
+        .payment-button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            color: white;
+        }
+        .phonepe { background-color: #6A0DAD; }
+        .gpay { background-color: #4285F4; }
+        .paytm { background-color: #002970; }
         input {
             width: 90%;
             padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        button {
-            background: #28a745;
-            color: white;
-            padding: 10px;
-            border: none;
-            width: 100%;
-            cursor: pointer;
-            border-radius: 5px;
+            margin-top: 10px;
             font-size: 16px;
-        }
-        button:hover {
-            background: #218838;
-        }
-        #recaptcha-container {
-            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
 </head>
 <body>
 
-    <div class="login-container">
-        <h2>Login</h2>
-        <input type="text" id="phone" placeholder="Enter Phone Number">
-        <button onclick="sendOTP()">Send OTP</button>
-        <div id="recaptcha-container"></div>
+    <h2>Choose Payment Method</h2>
+    
+    <div class="payment-container">
+        <label>Enter Amount:</label>
+        <input type="number" id="amount" placeholder="Enter amount" min="1">
 
-        <input type="text" id="otp" placeholder="Enter OTP">
-        <button onclick="verifyOTP()">Verify OTP</button>
+        <button class="payment-button phonepe" onclick="payWith('phonepe')">Pay with PhonePe</button>
+        <button class="payment-button gpay" onclick="payWith('gpay')">Pay with Google Pay</button>
+        <button class="payment-button paytm" onclick="payWith('paytm')">Pay with Paytm</button>
     </div>
 
     <script>
-        // ✅ Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyC_7BUrBZWjbr2wqxv5POcBmfEkktqmvf0",
-            authDomain: "payment-details-77108.firebaseapp.com",
-            projectId: "payment-details-77108",
-            storageBucket: "payment-details-77108.appspot.com",
-            messagingSenderId: "1044260652720",
-            appId: "1:1044260652720:web:4871e38d1ae7448cf3dd75"
-        };
-
-        // 🔹 Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-
-        let allowedContacts = [];
-
-        // 🔹 Fetch Allowed Contacts from JSON File on GitHub
-        fetch("https://YOUR_GITHUB_USERNAME.github.io/YOUR_REPO_NAME/contacts.json")
-            .then(response => response.json())
-            .then(data => {
-                allowedContacts = data.map(contact => contact.contact_no);
-            })
-            .catch(error => console.error("Error loading contacts:", error));
-
-        let appVerifier;
-
-        // 🔹 Initialize reCAPTCHA on Page Load
-        window.onload = function () {
-            appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                'size': 'normal',
-                'callback': function(response) {
-                    console.log("reCAPTCHA Verified");
-                }
-            });
-            appVerifier.render();
-        };
-
-        function sendOTP() {
-            let phoneNumber = document.getElementById("phone").value.trim();
-
-            // 🔴 Restrict Access: Only allow numbers in JSON
-            if (!allowedContacts.includes(phoneNumber)) {
-                alert("Access Denied! Your number is not registered.");
+        function payWith(app) {
+            let amount = document.getElementById("amount").value;
+            if (!amount || amount <= 0) {
+                alert("Please enter a valid amount.");
                 return;
             }
 
-            firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
-                .then(confirmationResult => {
-                    window.confirmationResult = confirmationResult;
-                    alert("OTP Sent!");
-                }).catch(error => {
-                    console.error(error);
-                    alert("Error sending OTP: " + error.message);
-                });
-        }
+            let upiID = "7069916089@ybl"; // Replace with your UPI ID
+            let name = "Your Name"; // Your name or business name
+            let url = "";
 
-        function verifyOTP() {
-            let otp = document.getElementById("otp").value.trim();
+            if (app === "phonepe") {
+                url = `upi://pay?pa=${upiID}&pn=${name}&am=${amount}&cu=INR&tn=Payment`;
+            } else if (app === "gpay") {
+                url = `tez://upi/pay?pa=${upiID}&pn=${name}&am=${amount}&cu=INR&tn=Payment`;
+            } else if (app === "paytm") {
+                url = `paytmmp://pay?pa=${upiID}&pn=${name}&am=${amount}&cu=INR&tn=Payment`;
+            }
 
-            window.confirmationResult.confirm(otp)
-                .then(result => {
-                    alert("Login Successful!");
-                    console.log("User:", result.user);
-                    // ✅ Redirect after successful login
-                    window.location.href = "dashboard.html"; 
-                }).catch(error => {
-                    console.error(error);
-                    alert("Invalid OTP: " + error.message);
-                });
+            window.location.href = url;
         }
     </script>
 
